@@ -31,5 +31,16 @@
 - `value_celsius` — `numeric(3,1)`, в коде читается как `number` (`mode: "number"`).
 - `updated_at` обновляется автоматически при каждом UPDATE (`$onUpdate`) — этого достаточно для last-write-wins.
 
+## 2026-10-29 — Подключение к Neon
+
+**Сделано**
+- `lib/db/index.ts`: пул `pg` + `drizzle-orm/node-postgres`, `attachDatabasePool` из `@vercel/functions`.
+- `.env.example` с `DATABASE_URL`; `.env.local` в git не попадает.
+
+**Решения**
+- Пул создаётся лениво (`getDb()`), а не при импорте: сборка (`next build`) не требует `DATABASE_URL`.
+- `connectionTimeoutMillis: 5s`, `query_timeout: 10s` — при недоступной БД запрос быстро падает, а не висит.
+- `pool.on("error")` — Neon закрывает простаивающие соединения; без обработчика процесс бы падал.
+
 **Дальше**
-- Подключение к Neon через `pg` + `@vercel/functions`.
+- Профиль ребёнка и расчёт возраста (нужен раньше кормлений: все записи ссылаются на `child_id`).
