@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { callAction } from "@/lib/action-result";
 import { createWeight, updateWeight } from "@/lib/actions/weights";
 import type { Weight } from "@/lib/db/schema";
 import { toLocalInput } from "@/lib/time";
-import { useNow } from "@/lib/use-now";
+import { useAutoNow } from "@/lib/use-auto-now";
 import { weightFormSchema, type WeightFormValues } from "@/lib/validation";
 import {
   Card,
@@ -55,14 +55,10 @@ export function WeightForm({ editing, onDone }: { editing: Weight | null; onDone
     defaultValues: editing ? valuesFrom(editing) : emptyValues,
   });
 
-  // Пока время не меняли вручную, оно равно «сейчас» (см. FeedingForm).
-  const now = useNow();
-  const timeTouched = dirtyFields.measuredAt === true;
-  useEffect(() => {
-    if (!editing && now !== null && !timeTouched) {
-      setValue("measuredAt", toLocalInput(new Date(now)));
-    }
-  }, [editing, now, timeTouched, setValue]);
+  // Время новой записи — «сейчас», пока его не меняли руками и не было неудачной отправки.
+  const [timeLocked, setTimeLocked] = useState(false);
+  const syncTime = useCallback((value: string) => setValue("measuredAt", value), [setValue]);
+  useAutoNow(syncTime, !editing && !timeLocked && dirtyFields.measuredAt !== true);
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -71,8 +67,10 @@ export function WeightForm({ editing, onDone }: { editing: Weight | null; onDone
     );
     if (!result.ok) {
       setServerError(result.error);
+      setTimeLocked(true);
       return;
     }
+    setTimeLocked(false);
     if (editing) onDone();
     else reset({ ...emptyValues, measuredAt: toLocalInput(new Date()) });
   });
@@ -103,9 +101,10 @@ export function WeightForm({ editing, onDone }: { editing: Weight | null; onDone
               <button
                 type="button"
                 className={cn(softButtonClass, "flex-none")}
-                onClick={() =>
-                  resetField("measuredAt", { defaultValue: toLocalInput(new Date()) })
-                }
+                onClick={() => {
+                  resetField("measuredAt", { defaultValue: toLocalInput(new Date()) });
+                  setTimeLocked(false);
+                }}
               >
                 Сейчас
               </button>

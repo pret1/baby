@@ -1,14 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { callAction } from "@/lib/action-result";
 import { createFeeding, updateFeeding } from "@/lib/actions/feedings";
 import type { Feeding } from "@/lib/db/schema";
 import { BREAST_SIDE_LABELS, FEEDING_TYPE_LABELS } from "@/lib/labels";
 import { toLocalInput } from "@/lib/time";
-import { useNow } from "@/lib/use-now";
+import { useAutoNow } from "@/lib/use-auto-now";
 import {
   BREAST_SIDES,
   FEEDING_TYPES,
@@ -76,15 +76,10 @@ export function FeedingForm({
         },
   });
 
-  // Новое кормление: пока пользователь не менял время вручную, оно равно «сейчас»
-  // и обновляется само — даже если страница была открыта несколько часов назад.
-  const now = useNow();
-  const timeTouched = dirtyFields.startedAt === true;
-  useEffect(() => {
-    if (!editing && now !== null && !timeTouched) {
-      setValue("startedAt", toLocalInput(new Date(now)));
-    }
-  }, [editing, now, timeTouched, setValue]);
+  // Время новой записи — «сейчас», пока его не меняли руками и не было неудачной отправки.
+  const [timeLocked, setTimeLocked] = useState(false);
+  const syncTime = useCallback((value: string) => setValue("startedAt", value), [setValue]);
+  useAutoNow(syncTime, !editing && !timeLocked && dirtyFields.startedAt !== true);
 
   const type = useWatch({ control, name: "type" });
 
@@ -95,8 +90,10 @@ export function FeedingForm({
     );
     if (!result.ok) {
       setServerError(result.error);
+      setTimeLocked(true);
       return;
     }
+    setTimeLocked(false);
     if (editing) {
       onDone();
     } else {
@@ -126,7 +123,10 @@ export function FeedingForm({
             <button
               type="button"
               className={cn(softButtonClass, "flex-none")}
-              onClick={() => resetField("startedAt", { defaultValue: toLocalInput(new Date()) })}
+              onClick={() => {
+                resetField("startedAt", { defaultValue: toLocalInput(new Date()) });
+                setTimeLocked(false);
+              }}
             >
               Сейчас
             </button>

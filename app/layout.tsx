@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { AppNav } from "@/components/app-nav";
+import { ConnectionWatcher } from "@/components/connection-watcher";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main className="mx-auto max-w-xl px-3.5 pt-[max(0.875rem,env(safe-area-inset-top))] pb-24">
           {children}
         </main>
+        <ConnectionWatcher />
         <AppNav />
       </body>
     </html>
