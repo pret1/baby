@@ -51,6 +51,12 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(hours / 24)} д ${hours % 24} ч`;
 }
 
+/** Компактно для плиток статистики: «3:05». */
+export function formatDurationShort(ms: number): string {
+  const totalMin = Math.max(0, Math.round(ms / MINUTE));
+  return `${Math.floor(totalMin / 60)}:${pad(totalMin % 60)}`;
+}
+
 export function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

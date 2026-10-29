@@ -8,6 +8,7 @@ import { useNow } from "@/lib/use-now";
 import { Skeleton, softButtonClass } from "../ui";
 import { FeedingForm } from "./feeding-form";
 import { FeedingList } from "./feeding-list";
+import { FeedingStats } from "./feeding-stats";
 
 export function FeedingView({
   feedings,
@@ -30,6 +31,12 @@ export function FeedingView({
 
   return (
     <>
+      {now === null ? (
+        <Skeleton className="mb-3 h-52" />
+      ) : (
+        <FeedingStats items={items} now={new Date(now)} />
+      )}
+
       <div ref={formRef} className="scroll-mt-3">
         <FeedingForm
           key={editing?.id ?? "new"}
