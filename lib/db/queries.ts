@@ -4,7 +4,16 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { getDb } from "./index";
 import { DAY } from "@/lib/time";
-import { children, feedings, weights, type Child, type Feeding, type Weight } from "./schema";
+import {
+  children,
+  feedings,
+  temperatures,
+  weights,
+  type Child,
+  type Feeding,
+  type Temperature,
+  type Weight,
+} from "./schema";
 
 // Чтение данных для серверных компонентов. connection() говорит Next.js, что
 // результат нужен на каждый запрос (не пререндерить на этапе сборки).
@@ -62,4 +71,27 @@ export async function getWeights(childId: string): Promise<Weight[]> {
     .from(weights)
     .where(eq(weights.childId, childId))
     .orderBy(asc(weights.measuredAt));
+}
+
+/** Измерения температуры за последние `days` дней (новые сверху) и есть ли более старые. */
+export async function getTemperatures(
+  childId: string,
+  days: number,
+): Promise<{ temperatures: Temperature[]; hasOlder: boolean }> {
+  await connection();
+  const db = getDb();
+  const since = new Date(Date.now() - days * DAY);
+  const [recent, older] = await Promise.all([
+    db
+      .select()
+      .from(temperatures)
+      .where(and(eq(temperatures.childId, childId), gte(temperatures.measuredAt, since)))
+      .orderBy(desc(temperatures.measuredAt)),
+    db
+      .select({ id: temperatures.id })
+      .from(temperatures)
+      .where(and(eq(temperatures.childId, childId), lt(temperatures.measuredAt, since)))
+      .limit(1),
+  ]);
+  return { temperatures: recent, hasOlder: older.length > 0 };
 }

@@ -163,3 +163,37 @@ export const weightFormSchema = z
   .pipe(weightSchema);
 
 export type WeightFormValues = z.input<typeof weightFormSchema>;
+
+// --- Температура ---
+
+export const TEMPERATURE_SITES = ["armpit", "rectal", "ear", "forehead", "mouth"] as const;
+
+export const temperatureSchema = z.object({
+  measuredAt: pastDate("Укажите время измерения"),
+  valueCelsius: z
+    .number({ error: "Укажите температуру, например 36,6" })
+    .min(30, "Слишком низкая температура — проверьте значение")
+    .max(45, "Слишком высокая температура — проверьте значение")
+    .transform((value) => Math.round(value * 10) / 10),
+  site: z.enum(TEMPERATURE_SITES, { error: "Выберите место измерения" }),
+  note,
+});
+
+export type TemperatureInput = z.infer<typeof temperatureSchema>;
+
+export const temperatureFormSchema = z
+  .object({
+    measuredAt: z.string(),
+    valueCelsius: z.string(),
+    site: z.enum(TEMPERATURE_SITES),
+    note: z.string(),
+  })
+  .transform((form) => ({
+    measuredAt: fromLocalInput(form.measuredAt),
+    valueCelsius: parseNumber(form.valueCelsius),
+    site: form.site,
+    note: parseText(form.note),
+  }))
+  .pipe(temperatureSchema);
+
+export type TemperatureFormValues = z.input<typeof temperatureFormSchema>;
