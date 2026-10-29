@@ -8,7 +8,9 @@ export default defineConfig({
   schema: "./lib/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
-  dbCredentials: { url: process.env.DATABASE_URL ?? "" },
+  // Миграции — через прямое подключение: pooled (PgBouncer в transaction mode)
+  // не держит сессионное состояние. Приложение работает через pooled DATABASE_URL.
+  dbCredentials: { url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? "" },
   strict: true,
   verbose: true,
 });

@@ -32,16 +32,29 @@ npm run dev                     # http://localhost:3000
 
 ## Подключение Neon
 
-1. Создайте проект в [console.neon.tech](https://console.neon.tech) (регион ближе к вам).
-2. **Connect** → скопируйте connection string. Для приложения — вариант **Pooled connection**
-   (хост содержит `-pooler`), он лучше переносит много коротких подключений с Vercel.
-3. Вставьте строку в `.env.local`:
-   ```
-   DATABASE_URL=postgres://USER:PASSWORD@ep-xxxx-pooler.REGION.aws.neon.tech/neondb?sslmode=require
-   ```
+Проект уже привязан к Neon: `neon.ts` в корне описывает сервисы (только Postgres),
+а локальная привязка к проекту и ветке хранится в `.neon` (не коммитится).
 
-Для разработки удобно сделать в Neon отдельную ветку (Branches → Create branch)
-и использовать её строку подключения локально, а основную ветку оставить для «боевых» данных.
+На новом компьютере:
+
+```bash
+npm i -g neon                 # Neon CLI
+neon login                    # вход через браузер
+neon link --org-id <org> --project-id <project> --branch production
+```
+
+`neon link` (и `neon deploy`) сами записывают в `.env.local`:
+
+| Переменная | Что это | Кто использует |
+| --- | --- | --- |
+| `DATABASE_URL` | pooled-подключение (хост с `-pooler`) | приложение (`lib/db/index.ts`) |
+| `DATABASE_URL_UNPOOLED` | прямое подключение | миграции (`drizzle.config.ts`) |
+
+Без CLI: [console.neon.tech](https://console.neon.tech) → проект → **Connect** → скопировать
+обе строки (с Connection pooling и без) в `.env.local`, см. `.env.example`.
+
+Для разработки удобно отдельная ветка: `neon checkout dev --create` создаёт её из `production`
+и переписывает `.env.local` на её строки. Вернуться: `neon checkout production`.
 
 ## Миграции
 
@@ -49,7 +62,7 @@ SQL-миграции лежат в `drizzle/` и коммитятся в реп�
 
 | Команда | Что делает |
 | --- | --- |
-| `npm run db:migrate` | применяет новые миграции к базе из `DATABASE_URL` |
+| `npm run db:migrate` | применяет новые миграции к базе из `DATABASE_URL_UNPOOLED` (или `DATABASE_URL`) |
 | `npm run db:generate` | после правки `lib/db/schema.ts` создаёт новый SQL-файл миграции |
 | `npm run db:studio` | веб-интерфейс Drizzle Studio для просмотра данных |
 
@@ -57,12 +70,10 @@ SQL-миграции лежат в `drizzle/` и коммитятся в реп�
 в `drizzle/` → закоммитить → `npm run db:migrate`.
 
 Миграции **не запускаются автоматически при деплое**: сборка на Vercel не зависит от базы.
-Применять их нужно вручную перед деплоем изменений схемы. Для миграций Neon рекомендует
-прямое (не pooled) подключение:
-
-```bash
-DATABASE_URL="postgres://...@ep-xxxx.REGION.aws.neon.tech/neondb?sslmode=require" npm run db:migrate
-```
+Применять их нужно вручную перед деплоем изменений схемы. Миграции идут через прямое
+подключение `DATABASE_URL_UNPOOLED`: pooled-подключение (PgBouncer) не держит сессионное
+состояние, которое нужно drizzle-kit. Миграцию лучше сначала проверить на ветке
+(`neon checkout dev --create` → `npm run db:migrate`), потом применить к `production`.
 
 ## Деплой на Vercel
 
@@ -73,8 +84,10 @@ DATABASE_URL="postgres://...@ep-xxxx.REGION.aws.neon.tech/neondb?sslmode=require
    (для Production, и при желании — Preview со строкой отдельной ветки Neon).
    Вместо ручного шага можно подключить Neon через **Vercel → Storage / Marketplace → Neon** —
    интеграция сама добавит `DATABASE_URL`.
-4. **Deploy**. Дальше каждый `git push` в основную ветку деплоится автоматически.
-5. Примените миграции к «боевой» базе (см. выше), если ещё не применяли.
+4. **Settings → Functions → Function Region** → `fra1` (Frankfurt): база Neon в
+   `eu-central-1`, функции рядом с ней — меньше задержка на каждый запрос.
+5. **Deploy**. Дальше каждый `git push` в основную ветку деплоится автоматически.
+6. Примените миграции к «боевой» базе (см. выше), если ещё не применяли.
 
 Подключение к базе на Vercel идёт через `pg` с пулом и `attachDatabasePool` из
 `@vercel/functions` (рекомендация Vercel для Fluid Compute), см. `lib/db/index.ts`.
