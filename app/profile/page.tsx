@@ -28,7 +28,8 @@ async function ProfileContent() {
             Для начала заполните профиль — его увидят оба родителя.
           </p>
         </header>
-        <ProfileForm child={null} />
+        {/* key: после удаления профиля форма должна пересоздаться пустой */}
+        <ProfileForm key="new" child={null} />
       </>
     );
   }
@@ -37,6 +38,7 @@ async function ProfileContent() {
     <>
       <ChildHeader name={child.name} birthDate={child.birthDate} showProfileLink={false} />
       <ProfileForm
+        key={child.id}
         child={{
           name: child.name,
           birthDate: child.birthDate,
