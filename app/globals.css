@@ -13,6 +13,8 @@
   --warn: #d99a1c;
   --bad: #d64545;
   --cool: #3b7fc4;
+  /* Линия графика: темнее акцента, чтобы контраст с фоном был >= 3:1 */
+  --chart: #c9654a;
   color-scheme: light;
 }
 
@@ -29,6 +31,7 @@
     --warn: #e6b04a;
     --bad: #ef7070;
     --cool: #6aa9e0;
+    --chart: #d8745a;
     color-scheme: dark;
   }
 }

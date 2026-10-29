@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { getDb } from "./index";
 import { DAY } from "@/lib/time";
-import { children, feedings, type Child, type Feeding } from "./schema";
+import { children, feedings, weights, type Child, type Feeding, type Weight } from "./schema";
 
 // Чтение данных для серверных компонентов. connection() говорит Next.js, что
 // результат нужен на каждый запрос (не пререндерить на этапе сборки).
@@ -52,4 +52,14 @@ export async function getFeedings(
       .limit(1),
   ]);
   return { feedings: recent, previous: previous ?? null };
+}
+
+/** Все взвешивания (их немного), от старых к новым. */
+export async function getWeights(childId: string): Promise<Weight[]> {
+  await connection();
+  return getDb()
+    .select()
+    .from(weights)
+    .where(eq(weights.childId, childId))
+    .orderBy(asc(weights.measuredAt));
 }

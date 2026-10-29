@@ -122,3 +122,44 @@ export const feedingFormSchema = z
   .pipe(feedingSchema);
 
 export type FeedingFormValues = z.input<typeof feedingFormSchema>;
+
+// --- Вес ---
+
+export const weightSchema = z
+  .object({
+    measuredAt: pastDate("Укажите время взвешивания"),
+    weightGrams: z
+      .number({ error: "Укажите вес в граммах" })
+      .int("Вес — целое число граммов")
+      .min(500, "Слишком маленький вес")
+      .max(30000, "Слишком большой вес"),
+    beforeFeeding: z.boolean(),
+    afterFeeding: z.boolean(),
+    freshDiaper: z.boolean(),
+    note,
+  })
+  .refine((weight) => !(weight.beforeFeeding && weight.afterFeeding), {
+    path: ["afterFeeding"],
+    message: "Нельзя одновременно «до» и «после» кормления",
+  });
+
+export type WeightInput = z.infer<typeof weightSchema>;
+
+export const weightFormSchema = z
+  .object({
+    measuredAt: z.string(),
+    weightGrams: z.string(),
+    beforeFeeding: z.boolean(),
+    afterFeeding: z.boolean(),
+    freshDiaper: z.boolean(),
+    note: z.string(),
+  })
+  .transform((form) => ({
+    ...form,
+    measuredAt: fromLocalInput(form.measuredAt),
+    weightGrams: parseNumber(form.weightGrams),
+    note: parseText(form.note),
+  }))
+  .pipe(weightSchema);
+
+export type WeightFormValues = z.input<typeof weightFormSchema>;
