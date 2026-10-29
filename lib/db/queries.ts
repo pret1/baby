@@ -1,9 +1,10 @@
-import { asc } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { getDb } from "./index";
-import { children, type Child } from "./schema";
+import { DAY } from "@/lib/time";
+import { children, feedings, type Child, type Feeding } from "./schema";
 
 // Чтение данных для серверных компонентов. connection() говорит Next.js, что
 // результат нужен на каждый запрос (не пререндерить на этапе сборки).
@@ -24,4 +25,31 @@ export async function requireChild(): Promise<Child> {
   const child = await getChild();
   if (!child) redirect("/profile");
   return child;
+}
+
+/**
+ * Кормления за последние `days` дней (новые сверху) и одно кормление перед этим
+ * окном — чтобы у самой старой показанной записи тоже был посчитан интервал.
+ */
+export async function getFeedings(
+  childId: string,
+  days: number,
+): Promise<{ feedings: Feeding[]; previous: Feeding | null }> {
+  await connection();
+  const db = getDb();
+  const since = new Date(Date.now() - days * DAY);
+  const [recent, [previous]] = await Promise.all([
+    db
+      .select()
+      .from(feedings)
+      .where(and(eq(feedings.childId, childId), gte(feedings.startedAt, since)))
+      .orderBy(desc(feedings.startedAt)),
+    db
+      .select()
+      .from(feedings)
+      .where(and(eq(feedings.childId, childId), lt(feedings.startedAt, since)))
+      .orderBy(desc(feedings.startedAt))
+      .limit(1),
+  ]);
+  return { feedings: recent, previous: previous ?? null };
 }

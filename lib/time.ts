@@ -116,3 +116,19 @@ export function formatAge(birth: Date, now: Date): string {
   const years = Math.floor(fullMonths / 12);
   return joinParts(`${years} ${plural(years, "год", "года", "лет")}`, months(fullMonths % 12));
 }
+
+/** Группирует уже отсортированные записи по календарным дням (часовой пояс телефона). */
+export function groupByDay<T>(
+  items: T[],
+  getDate: (item: T) => Date,
+): { key: string; date: Date; items: T[] }[] {
+  const groups: { key: string; date: Date; items: T[] }[] = [];
+  for (const item of items) {
+    const date = getDate(item);
+    const key = dayKey(date);
+    const last = groups[groups.length - 1];
+    if (last?.key === key) last.items.push(item);
+    else groups.push({ key, date, items: [item] });
+  }
+  return groups;
+}
