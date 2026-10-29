@@ -15,5 +15,21 @@
 - Даты, «сегодня» и группировка по дням считаются на клиенте по часовому поясу телефона (сервер на Vercel работает в UTC).
 - `AGENTS.md` создан `create-next-app` и пересоздаётся `next dev` — оставлен в репозитории.
 
+## 2026-10-29 — Схема БД и первая миграция
+
+**Сделано**
+- `lib/db/schema.ts`: таблицы `children`, `feedings`, `weights`, `temperatures` по ТЗ.
+- `drizzle.config.ts` читает `DATABASE_URL` из `.env.local` через `@next/env` (тот же механизм, что у Next.js).
+- Миграция `drizzle/0000_init.sql`, скрипты `npm run db:generate | db:migrate | db:studio`.
+- Проверено на локальном Postgres 17: миграция применяется, CHECK `before_feeding AND after_feeding` отклоняет запись.
+
+**Решения**
+- Все даты — `timestamptz`; `birth_date` тоже `timestamptz` (дата и время рождения), а не `date`.
+- Перечисления (`feeding_type`, `breast_side`, `temperature_site`) — Postgres enum.
+- Первичные ключи — `uuid` (`gen_random_uuid()`).
+- Помимо обязательного CHECK для «до/после кормления» добавлены простые CHECK: `breast_side` заполнен только для типа `breast`, объём/длительность/вес > 0, температура 30–45 °C.
+- `value_celsius` — `numeric(3,1)`, в коде читается как `number` (`mode: "number"`).
+- `updated_at` обновляется автоматически при каждом UPDATE (`$onUpdate`) — этого достаточно для last-write-wins.
+
 **Дальше**
-- Drizzle: схема и первая миграция.
+- Подключение к Neon через `pg` + `@vercel/functions`.

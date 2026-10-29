@@ -1,0 +1,14 @@
+import { loadEnvConfig } from "@next/env";
+import { defineConfig } from "drizzle-kit";
+
+// Те же .env.local / .env, что читает Next.js
+loadEnvConfig(process.cwd());
+
+export default defineConfig({
+  schema: "./lib/db/schema.ts",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: { url: process.env.DATABASE_URL ?? "" },
+  strict: true,
+  verbose: true,
+});
