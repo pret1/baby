@@ -1,8 +1,26 @@
-export default function Home() {
+import { Suspense } from "react";
+import { ChildHeader } from "@/components/child-header";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { Card } from "@/components/ui";
+import { requireChild } from "@/lib/db/queries";
+
+export default function HomePage() {
   return (
-    <div className="rounded-2xl border border-line bg-card p-4">
-      <h1 className="text-xl font-semibold">Дневник малыша</h1>
-      <p className="text-sm text-muted">Приложение в разработке.</p>
-    </div>
+    <Suspense fallback={<PageSkeleton />}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+async function HomeContent() {
+  const child = await requireChild();
+
+  return (
+    <>
+      <ChildHeader name={child.name} birthDate={child.birthDate} />
+      <Card>
+        <p className="text-sm text-muted">Сводка появится, когда будут добавлены разделы.</p>
+      </Card>
+    </>
   );
 }
