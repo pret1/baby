@@ -19,6 +19,19 @@ type Datum = { t: number; grams: number; birth: boolean };
 
 const axisTick = { fill: "var(--muted)", fontSize: 12 };
 
+/** Круглые равномерные деления оси веса (шаг 50/100/200/… г, не больше ~4 интервалов). */
+function weightTicks(grams: number[]): number[] {
+  const min = Math.min(...grams);
+  const max = Math.max(...grams);
+  const range = Math.max(max - min, 100);
+  const step = [50, 100, 200, 250, 500, 1000, 2000].find((s) => range / s <= 4) ?? 5000;
+  const low = Math.floor((min - step / 4) / step) * step;
+  const high = Math.ceil((max + step / 4) / step) * step;
+  const ticks: number[] = [];
+  for (let t = low; t <= high; t += step) ticks.push(t);
+  return ticks;
+}
+
 export function WeightChart({ points }: { points: WeightPoint[] }) {
   const data: Datum[] = points.map((p) => ({
     t: p.measuredAt.getTime(),
@@ -26,6 +39,7 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
     birth: p.weight === null,
   }));
   const lastIndex = data.length - 1;
+  const yTicks = weightTicks(data.map((d) => d.grams));
 
   // Подпись значения только у последней точки — остальное в подсказке и истории ниже.
   const endLabel = ({ x, y, index }: LabelProps) =>
@@ -64,11 +78,8 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
           minTickGap={24}
         />
         <YAxis
-          domain={[
-            (min: number) => Math.floor((min - 50) / 100) * 100,
-            (max: number) => Math.ceil((max + 50) / 100) * 100,
-          ]}
-          allowDecimals={false}
+          domain={[yTicks[0], yTicks[yTicks.length - 1]]}
+          ticks={yTicks}
           tickFormatter={(g: number) => g.toLocaleString("ru-RU")}
           tick={axisTick}
           axisLine={false}
