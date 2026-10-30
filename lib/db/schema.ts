@@ -39,9 +39,14 @@ export const children = pgTable(
     name: text("name").notNull(),
     birthDate: timestamp("birth_date", { withTimezone: true }).notNull(),
     birthWeightGrams: integer("birth_weight_grams").notNull(),
+    // Необязательно: профиль мог быть создан до появления раздела «Рост».
+    birthHeightCm: numeric("birth_height_cm", { precision: 4, scale: 1, mode: "number" }),
     ...timestamps,
   },
-  (t) => [check("children_birth_weight_positive", sql`${t.birthWeightGrams} > 0`)],
+  (t) => [
+    check("children_birth_weight_positive", sql`${t.birthWeightGrams} > 0`),
+    check("children_birth_height_range", sql`${t.birthHeightCm} between 20 and 70`),
+  ],
 );
 
 export const feedings = pgTable(
@@ -111,7 +116,26 @@ export const temperatures = pgTable(
   ],
 );
 
+export const heights = pgTable(
+  "heights",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    childId: uuid("child_id")
+      .notNull()
+      .references(() => children.id, { onDelete: "cascade" }),
+    measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
+    heightCm: numeric("height_cm", { precision: 4, scale: 1, mode: "number" }).notNull(),
+    note: text("note"),
+    ...timestamps,
+  },
+  (t) => [
+    index("heights_child_measured_idx").on(t.childId, t.measuredAt),
+    check("heights_value_range", sql`${t.heightCm} between 20 and 150`),
+  ],
+);
+
 export type Child = typeof children.$inferSelect;
 export type Feeding = typeof feedings.$inferSelect;
 export type Weight = typeof weights.$inferSelect;
 export type Temperature = typeof temperatures.$inferSelect;
+export type Height = typeof heights.$inferSelect;
