@@ -10,36 +10,30 @@ import {
   type LabelProps,
   type TooltipContentProps,
 } from "recharts";
-import { formatGrams } from "@/lib/format";
+import { niceTicks } from "@/lib/ticks";
 import { formatDate, formatDateTime } from "@/lib/time";
-import type { WeightPoint } from "@/lib/weights";
-import { Card, CardTitle } from "../ui";
+import { Card, CardTitle } from "./ui";
 
-type Datum = { t: number; grams: number; birth: boolean };
+/** Точка графика веса или роста. `birth` — значение при рождении из профиля. */
+export type GrowthDatum = { t: number; value: number; birth: boolean };
 
 const axisTick = { fill: "var(--muted)", fontSize: 12 };
+const formatNumber = (value: number) => value.toLocaleString("ru-RU");
 
-/** Круглые равномерные деления оси веса (шаг 50/100/200/… г, не больше ~4 интервалов). */
-function weightTicks(grams: number[]): number[] {
-  const min = Math.min(...grams);
-  const max = Math.max(...grams);
-  const range = Math.max(max - min, 100);
-  const step = [50, 100, 200, 250, 500, 1000, 2000].find((s) => range / s <= 4) ?? 5000;
-  const low = Math.floor((min - step / 4) / step) * step;
-  const high = Math.ceil((max + step / 4) / step) * step;
-  const ticks: number[] = [];
-  for (let t = low; t <= high; t += step) ticks.push(t);
-  return ticks;
-}
-
-export function WeightChart({ points }: { points: WeightPoint[] }) {
-  const data: Datum[] = points.map((p) => ({
-    t: p.measuredAt.getTime(),
-    grams: p.grams,
-    birth: p.weight === null,
-  }));
+export function GrowthChart({
+  title,
+  data,
+  tickSteps,
+  formatValue,
+}: {
+  title: string;
+  data: GrowthDatum[];
+  tickSteps: readonly number[];
+  /** Значение с единицей измерения — для подсказки. */
+  formatValue: (value: number) => string;
+}) {
   const lastIndex = data.length - 1;
-  const yTicks = weightTicks(data.map((d) => d.grams));
+  const yTicks = niceTicks(data.map((d) => d.value), tickSteps);
 
   // Подпись значения только у последней точки — остальное в подсказке и истории ниже.
   const endLabel = ({ x, y, index }: LabelProps) =>
@@ -52,13 +46,13 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
         fontSize={12}
         fontWeight={700}
       >
-        {data[lastIndex].grams.toLocaleString("ru-RU")}
+        {formatNumber(data[lastIndex].value)}
       </text>
     ) : null;
 
   return (
     <Card>
-      <CardTitle>Вес, г</CardTitle>
+      <CardTitle>{title}</CardTitle>
       <LineChart
         responsive
         data={data}
@@ -80,20 +74,20 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
         <YAxis
           domain={[yTicks[0], yTicks[yTicks.length - 1]]}
           ticks={yTicks}
-          tickFormatter={(g: number) => g.toLocaleString("ru-RU")}
+          tickFormatter={formatNumber}
           tick={axisTick}
           axisLine={false}
           tickLine={false}
           width={44}
         />
         <Tooltip
-          content={WeightTooltip}
+          content={(props) => <GrowthTooltip {...props} formatValue={formatValue} />}
           cursor={{ stroke: "var(--muted)", strokeWidth: 1 }}
           isAnimationActive={false}
         />
         <Line
           type="linear"
-          dataKey="grams"
+          dataKey="value"
           stroke="var(--chart)"
           strokeWidth={2}
           strokeLinecap="round"
@@ -108,8 +102,12 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
   );
 }
 
-function WeightTooltip({ active, payload }: TooltipContentProps) {
-  const datum = payload?.[0]?.payload as Datum | undefined;
+function GrowthTooltip({
+  active,
+  payload,
+  formatValue,
+}: TooltipContentProps & { formatValue: (value: number) => string }) {
+  const datum = payload?.[0]?.payload as GrowthDatum | undefined;
   if (!active || !datum) return null;
   return (
     <div className="rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs shadow-sm">
@@ -118,7 +116,7 @@ function WeightTooltip({ active, payload }: TooltipContentProps) {
       </div>
       <div className="flex items-center gap-1.5 font-bold text-fg">
         <span className="size-2 rounded-full bg-[var(--chart)]" aria-hidden />
-        {formatGrams(datum.grams)}
+        {formatValue(datum.value)}
       </div>
     </div>
   );

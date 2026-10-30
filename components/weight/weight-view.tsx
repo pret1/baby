@@ -2,13 +2,16 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { Child, Weight } from "@/lib/db/schema";
+import { formatGrams } from "@/lib/format";
 import { useNow } from "@/lib/use-now";
 import { weightPoints, weightRows } from "@/lib/weights";
+import { GrowthChart } from "../growth-chart";
 import { Skeleton } from "../ui";
-import { WeightChart } from "./weight-chart";
 import { WeightForm } from "./weight-form";
 import { WeightList } from "./weight-list";
 import { WeightStats } from "./weight-stats";
+
+const tickSteps = [50, 100, 200, 250, 500, 1000, 2000, 5000];
 
 export function WeightView({
   child,
@@ -40,7 +43,18 @@ export function WeightView({
   return (
     <>
       <WeightStats points={points} />
-      {points.length > 1 && <WeightChart points={points} />}
+      {points.length > 1 && (
+        <GrowthChart
+          title="Вес, г"
+          data={points.map((p) => ({
+            t: p.measuredAt.getTime(),
+            value: p.grams,
+            birth: p.weight === null,
+          }))}
+          tickSteps={tickSteps}
+          formatValue={formatGrams}
+        />
+      )}
       <div ref={formRef} className="scroll-mt-3">
         <WeightForm key={editing?.id ?? "new"} editing={editing} onDone={() => setEditing(null)} />
       </div>
