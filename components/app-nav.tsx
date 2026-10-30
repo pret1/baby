@@ -8,6 +8,7 @@ const items = [
   { href: "/", label: "Главная", icon: "🏠" },
   { href: "/feeding", label: "Кормление", icon: "🍼" },
   { href: "/weight", label: "Вес", icon: "⚖️" },
+  { href: "/height", label: "Рост", icon: "📏" },
   { href: "/temperature", label: "Температура", icon: "🌡️" },
 ] as const;
 

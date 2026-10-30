@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, type ReactNode } from "react";
-import type { Child, Feeding, Temperature, Weight } from "@/lib/db/schema";
+import type { Child, Feeding, Height, Temperature, Weight } from "@/lib/db/schema";
 import { feedingStats, withIntervals, type FeedingWithInterval } from "@/lib/feedings";
-import { formatGrams, formatSigned } from "@/lib/format";
+import { formatCm, formatGrams, formatSigned } from "@/lib/format";
+import { heightPoints, heightStats } from "@/lib/heights";
 import { BREAST_SIDE_LABELS, FEEDING_TYPE_LABELS } from "@/lib/labels";
 import { formatCelsius, maxLast24h } from "@/lib/temperatures";
 import { formatDate, formatDuration, formatTime, plural } from "@/lib/time";
@@ -49,12 +50,14 @@ export function HomeSummary({
   feedings,
   previousFeeding,
   weights,
+  heights,
   temperatures,
 }: {
-  child: Pick<Child, "birthDate" | "birthWeightGrams">;
+  child: Pick<Child, "birthDate" | "birthWeightGrams" | "birthHeightCm">;
   feedings: Feeding[];
   previousFeeding: Feeding | null;
   weights: Weight[];
+  heights: Height[];
   temperatures: Temperature[];
 }) {
   const now = useNow();
@@ -63,6 +66,7 @@ export function HomeSummary({
     [feedings, previousFeeding],
   );
   const weight = useMemo(() => weightStats(weightPoints(child, weights)), [child, weights]);
+  const height = useMemo(() => heightStats(heightPoints(child, heights)), [child, heights]);
 
   return (
     <>
@@ -84,6 +88,7 @@ export function HomeSummary({
       {now === null ? (
         <>
           <Skeleton className="mb-3 h-28" />
+          <Skeleton className="mb-3 h-24" />
           <Skeleton className="mb-3 h-24" />
           <Skeleton className="h-24" />
         </>
@@ -108,6 +113,28 @@ export function HomeSummary({
               </>
             ) : (
               <Line label="При рождении">{formatGrams(child.birthWeightGrams)}</Line>
+            )}
+          </SummaryCard>
+
+          <SummaryCard href="/height" title="Рост">
+            {height.latest ? (
+              <>
+                <Line label={`Последний · ${formatDate(height.latest.measuredAt)}`}>
+                  {formatCm(height.latest.cm)}
+                </Line>
+                {height.sincePrevious && (
+                  <Line label="С прошлого измерения">
+                    {formatSigned(height.sincePrevious.cm, 1)} см
+                  </Line>
+                )}
+                {height.sinceBirth && (
+                  <Line label="С рождения">{formatSigned(height.sinceBirth.cm, 1)} см</Line>
+                )}
+              </>
+            ) : child.birthHeightCm !== null ? (
+              <Line label="При рождении">{formatCm(child.birthHeightCm)}</Line>
+            ) : (
+              <p className="text-sm text-muted">Измерений пока не было</p>
             )}
           </SummaryCard>
 

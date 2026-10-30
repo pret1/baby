@@ -7,10 +7,12 @@ import { DAY } from "@/lib/time";
 import {
   children,
   feedings,
+  heights,
   temperatures,
   weights,
   type Child,
   type Feeding,
+  type Height,
   type Temperature,
   type Weight,
 } from "./schema";
@@ -71,6 +73,16 @@ export async function getWeights(childId: string): Promise<Weight[]> {
     .from(weights)
     .where(eq(weights.childId, childId))
     .orderBy(asc(weights.measuredAt));
+}
+
+/** Все измерения роста (их немного), от старых к новым. */
+export async function getHeights(childId: string): Promise<Height[]> {
+  await connection();
+  return getDb()
+    .select()
+    .from(heights)
+    .where(eq(heights.childId, childId))
+    .orderBy(asc(heights.measuredAt));
 }
 
 /** Измерения температуры за последние `days` дней (новые сверху) и есть ли более старые. */
