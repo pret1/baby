@@ -1,7 +1,7 @@
 # Дневник малыша
 
 Мобильное веб-приложение для двух родителей: кормления (с автоматическим расчётом
-интервалов), вес с графиком, температура с подсветкой. Данные хранятся в Neon Postgres,
+интервалов), вес и рост с графиками, температура с подсветкой. Данные хранятся в Neon Postgres,
 оба родителя видят одно и то же.
 
 **Стек:** Next.js 16 (App Router, Server Actions) · TypeScript (strict) · Tailwind CSS 4 ·
@@ -102,7 +102,7 @@ SQL-миграции лежат в `drizzle/` и коммитятся в реп�
 | --- | --- |
 | `npm run dev` | режим разработки |
 | `npm run build` / `npm start` | production-сборка и запуск |
-| `npm test` | юнит-тесты (интервалы, статистика, возраст, вес, температура) |
+| `npm test` | юнит-тесты (интервалы, статистика, возраст, вес, рост, температура) |
 | `npm run lint` | ESLint |
 
 ## Структура
@@ -110,7 +110,7 @@ SQL-миграции лежат в `drizzle/` и коммитятся в реп�
 ```
 app/
   page.tsx               главная: возраст, быстрые кнопки, сводка
-  feeding/ weight/ temperature/ profile/   разделы
+  feeding/ weight/ height/ temperature/ profile/   разделы
   error.tsx              экран «не удалось загрузить данные» + «Повторить»
 components/              формы, списки, график, общие UI-элементы
 lib/
@@ -119,7 +119,7 @@ lib/
   db/queries.ts          чтение данных для страниц
   actions/               Server Actions: создание, изменение, удаление
   validation.ts          Zod-схемы (сервер и формы)
-  feedings.ts weights.ts temperatures.ts   расчёты: интервалы, статистика, пороги
+  feedings.ts weights.ts heights.ts temperatures.ts   расчёты: интервалы, прирост, пороги
   time.ts                даты, возраст, форматирование
 drizzle/                 SQL-миграции
 ```
