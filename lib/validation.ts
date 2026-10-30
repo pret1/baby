@@ -22,6 +22,9 @@ function parseText(value: string): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
+/** Рост и температура хранятся с точностью до десятых. */
+const toTenths = (value: number) => Math.round(value * 10) / 10;
+
 const notInFuture = (date: Date) => date.getTime() <= Date.now() + 5 * 60_000;
 
 const pastDate = (requiredMessage: string) =>
@@ -41,16 +44,28 @@ export const childSchema = z.object({
     .int("Вес — целое число граммов")
     .min(300, "Слишком маленький вес")
     .max(8000, "Слишком большой вес"),
+  birthHeightCm: z
+    .number({ error: "Рост — число в сантиметрах, например 52" })
+    .min(20, "Слишком маленький рост — проверьте значение")
+    .max(70, "Слишком большой рост — укажите в сантиметрах")
+    .transform(toTenths)
+    .nullable(),
 });
 
 export type ChildInput = z.infer<typeof childSchema>;
 
 export const childFormSchema = z
-  .object({ name: z.string(), birthDate: z.string(), birthWeightGrams: z.string() })
+  .object({
+    name: z.string(),
+    birthDate: z.string(),
+    birthWeightGrams: z.string(),
+    birthHeightCm: z.string(),
+  })
   .transform((form) => ({
     name: form.name,
     birthDate: fromLocalInput(form.birthDate),
     birthWeightGrams: parseNumber(form.birthWeightGrams),
+    birthHeightCm: parseOptionalNumber(form.birthHeightCm),
   }))
   .pipe(childSchema);
 
@@ -174,7 +189,7 @@ export const temperatureSchema = z.object({
     .number({ error: "Укажите температуру, например 36,6" })
     .min(30, "Слишком низкая температура — проверьте значение")
     .max(45, "Слишком высокая температура — проверьте значение")
-    .transform((value) => Math.round(value * 10) / 10),
+    .transform(toTenths),
   site: z.enum(TEMPERATURE_SITES, { error: "Выберите место измерения" }),
   note,
 });
@@ -197,3 +212,28 @@ export const temperatureFormSchema = z
   .pipe(temperatureSchema);
 
 export type TemperatureFormValues = z.input<typeof temperatureFormSchema>;
+
+// --- Рост ---
+
+export const heightSchema = z.object({
+  measuredAt: pastDate("Укажите дату измерения"),
+  heightCm: z
+    .number({ error: "Укажите рост в сантиметрах, например 54,5" })
+    .min(20, "Слишком маленький рост — проверьте значение")
+    .max(150, "Слишком большой рост — укажите в сантиметрах")
+    .transform(toTenths),
+  note,
+});
+
+export type HeightInput = z.infer<typeof heightSchema>;
+
+export const heightFormSchema = z
+  .object({ measuredAt: z.string(), heightCm: z.string(), note: z.string() })
+  .transform((form) => ({
+    measuredAt: fromLocalInput(form.measuredAt),
+    heightCm: parseNumber(form.heightCm),
+    note: parseText(form.note),
+  }))
+  .pipe(heightSchema);
+
+export type HeightFormValues = z.input<typeof heightFormSchema>;

@@ -11,7 +11,7 @@ import { toLocalInput } from "@/lib/time";
 import { childFormSchema } from "@/lib/validation";
 import { Card, CardTitle, ErrorText, Field, cn, inputClass, primaryButtonClass } from "./ui";
 
-type ProfileValues = Pick<Child, "name" | "birthDate" | "birthWeightGrams">;
+type ProfileValues = Pick<Child, "name" | "birthDate" | "birthWeightGrams" | "birthHeightCm">;
 
 export function ProfileForm({ child }: { child: ProfileValues | null }) {
   const router = useRouter();
@@ -26,6 +26,8 @@ export function ProfileForm({ child }: { child: ProfileValues | null }) {
       name: child?.name ?? "",
       birthDate: child ? toLocalInput(child.birthDate) : "",
       birthWeightGrams: child ? String(child.birthWeightGrams) : "",
+      birthHeightCm:
+        child?.birthHeightCm != null ? String(child.birthHeightCm).replace(".", ",") : "",
     },
   });
 
@@ -51,23 +53,19 @@ export function ProfileForm({ child }: { child: ProfileValues | null }) {
             {...register("name")}
           />
         </Field>
-        <div className="flex flex-wrap gap-x-2">
-          <Field
-            label="Дата и время рождения"
-            error={errors.birthDate?.message}
-            className="grow basis-48"
-          >
-            <input
-              type="datetime-local"
-              className={inputClass}
-              aria-invalid={!!errors.birthDate}
-              {...register("birthDate")}
-            />
-          </Field>
+        <Field label="Дата и время рождения" error={errors.birthDate?.message}>
+          <input
+            type="datetime-local"
+            className={inputClass}
+            aria-invalid={!!errors.birthDate}
+            {...register("birthDate")}
+          />
+        </Field>
+        <div className="flex gap-x-2">
           <Field
             label="Вес при рождении, г"
             error={errors.birthWeightGrams?.message}
-            className="grow basis-28"
+            className="flex-1"
           >
             <input
               type="number"
@@ -76,6 +74,20 @@ export function ProfileForm({ child }: { child: ProfileValues | null }) {
               className={inputClass}
               aria-invalid={!!errors.birthWeightGrams}
               {...register("birthWeightGrams")}
+            />
+          </Field>
+          <Field
+            label="Рост при рождении, см"
+            error={errors.birthHeightCm?.message}
+            className="flex-1"
+          >
+            <input
+              inputMode="decimal"
+              placeholder="необязательно"
+              autoComplete="off"
+              className={inputClass}
+              aria-invalid={!!errors.birthHeightCm}
+              {...register("birthHeightCm")}
             />
           </Field>
         </div>

@@ -43,6 +43,7 @@ async function ProfileContent() {
           name: child.name,
           birthDate: child.birthDate,
           birthWeightGrams: child.birthWeightGrams,
+          birthHeightCm: child.birthHeightCm,
         }}
       />
       <DeleteProfile />
